@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera App</title>
+    <title>love ko si danielle</title>
     <style>
         /* General Reset */
         * {
@@ -172,7 +172,7 @@
 </head>
 <body>
     <div class="camera-container">
-        <h1>Camera App</h1>
+        <h1>who is this diva</h1>
         <video id="video" autoplay></video>
         <canvas id="canvas"></canvas>
         <div>
@@ -206,6 +206,8 @@
         let mediaRecorder;
         let videoChunks = [];
         let recordingStartTime;
+        let currentStream;
+        let currentCamera = 'user';
 
         // Access the camera
         navigator.mediaDevices.getUserMedia({ video: true })
