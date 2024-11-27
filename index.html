@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera App</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body & Layout */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .camera-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #f0f0f0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        /* Buttons Style */
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button#video-button {
+            background-color: #f44336;
+        }
+
+        button#video-button:hover {
+            background-color: #e53935;
+        }
+
+        /* Timer Display */
+        #timer {
+            font-size: 18px;
+            margin-top: 15px;
+            color: #fff;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Gallery Styles */
+        .gallery-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .gallery img {
+            width: 160px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery img:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn {
+            background-color: #333;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 18px;
+            color: #fff;
+            border: none;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #444;
+        }
+
+        /* Random Button Styling */
+        #random-button {
+            background-color: #FF9800;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #random-button:hover {
+            background-color: #FB8C00;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            button {
+                width: 100%;
+                font-size: 16px;
+            }
+
+            .gallery img {
+                width: 120px;
+                height: 80px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="camera-container">
+        <h1>Camera App</h1>
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+        <div>
+            <button id="photo-button">Take Photo</button>
+            <button id="random-button">Click Me</button>
+            <button id="video-button">Record Video</button>
+            <button id="gallery-button">View Gallery</button>
+        </div>
+        <div id="timer"></div>
+
+        <!-- Gallery Section -->
+        <div class="gallery-container" id="gallery-container">
+            <h2>Gallery</h2>
+            <div class="gallery" id="gallery"></div>
+            <button class="back-btn" onclick="closeGallery()">Back to Camera</button>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photoButton = document.getElementById('photo-button');
+        const randomButton = document.getElementById('random-button');
+        const videoButton = document.getElementById('video-button');
+        const galleryButton = document.getElementById('gallery-button');
+        const timerElement = document.getElementById('timer');
+        const galleryContainer = document.getElementById('gallery-container');
+        const gallery = document.getElementById('gallery');
+        
+        let mediaStream;
+        let mediaRecorder;
+        let videoChunks = [];
+        let recordingStartTime;
+
+        // Access the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                mediaStream = stream;
+                video.srcObject = stream;
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+
+        // Take a photo
+        photoButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const photo = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = photo;
+            link.download = 'photo.png';
+            link.click();
+
+            // Save photo to gallery
+            saveToGallery(photo);
+        });
+
+        // Start and stop video recording with a timer
+        videoButton.addEventListener('click', () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                // Start recording
+                startRecording();
+            } else {
+                // Stop recording
+                stopRecording();
+            }
+        });
+
+        function startRecording() {
+            videoButton.textContent = "Stop Recording";
+            videoButton.style.backgroundColor = "#f44336";
+            videoButton.style.transition = "background-color 0.3s";
+
+            videoChunks = [];
+            mediaRecorder = new MediaRecorder(mediaStream);
+            mediaRecorder.ondataavailable = (event) => {
+                videoChunks.push(event.data);
+            };
+            mediaRecorder.onstop = () => {
+                const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+                const videoURL = URL.createObjectURL(videoBlob);
+                const link = document.createElement('a');
+                link.href = videoURL;
+                link.download = 'video.webm';
+                link.click();
+            };
+
+            mediaRecorder.start();
+
+            // Start the timer
+            recordingStartTime = Date.now();
+            updateTimer();
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            videoButton.textContent = "Record Video";
+            videoButton.style.backgroundColor = "#4CAF50";
+        }
+
+        function updateTimer() {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                const elapsedTime = Math.floor((Date.now() - recordingStartTime) / 1000);
+                timerElement.textContent = `Recording: ${elapsedTime}s`;
+                requestAnimationFrame(updateTimer);
+            }
+        }
+
+        // Show gallery
+        galleryButton.addEventListener('click', () => {
+            galleryContainer.style.display = 'block';
+        });
+
+        function saveToGallery(photoData) {
+            const img = document.createElement('img');
+            img.src = photoData;
+            gallery.appendChild(img);
+        }
+
+        function closeGallery() {
+            galleryContainer.style.display = 'none';
+        }
+
+        // "Click Me" Button Action
+        randomButton.addEventListener('click', () => {
+            alert('loveu baby ehehehe');
+        });
+    </script>
+</body>
+</html>
