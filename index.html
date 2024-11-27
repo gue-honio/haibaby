@@ -176,10 +176,11 @@
         <video id="video" autoplay></video>
         <canvas id="canvas"></canvas>
         <div>
-            <button id="photo-button">Take Photo</button>
-            <button id="random-button">Click Me</button>
-            <button id="video-button">Record Video</button>
-            <button id="gallery-button">View Gallery</button>
+            <button id="photo-button">photo</button>
+            <button id="random-button">purple heart core</button>
+            <button id="video-button">video</button>
+            <button id="gallery-button">gallery</button>
+            <button id="flip-button">Flip Camera</button> <!-- Added the flip camera button -->
         </div>
         <div id="timer"></div>
 
@@ -198,22 +199,39 @@
         const randomButton = document.getElementById('random-button');
         const videoButton = document.getElementById('video-button');
         const galleryButton = document.getElementById('gallery-button');
+        const flipButton = document.getElementById('flip-button'); // Access the flip button
         const timerElement = document.getElementById('timer');
         const galleryContainer = document.getElementById('gallery-container');
         const gallery = document.getElementById('gallery');
         
         let currentStream;
-        let currentCamera = 'user';
+        let currentCamera = 'user'; // Default to front camera
 
         // Access the camera
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => {
-                mediaStream = stream;
-                video.srcObject = stream;
-            })
-            .catch((error) => {
-                console.error('Error accessing camera:', error);
-            });
+        function startCamera(camera = 'user') {
+            if (currentStream) {
+                let tracks = currentStream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: camera } })
+                .then((stream) => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch((error) => {
+                    console.error('Error accessing camera:', error);
+                });
+        }
+
+        // Start the camera on page load
+        startCamera();
+
+        // Flip the camera
+        flipButton.addEventListener('click', () => {
+            currentCamera = (currentCamera === 'user') ? 'environment' : 'user';
+            startCamera(currentCamera); // Restart camera with the flipped mode
+        });
 
         // Take a photo
         photoButton.addEventListener('click', () => {
@@ -248,7 +266,7 @@
             videoButton.style.transition = "background-color 0.3s";
 
             videoChunks = [];
-            mediaRecorder = new MediaRecorder(mediaStream);
+            mediaRecorder = new MediaRecorder(currentStream);
             mediaRecorder.ondataavailable = (event) => {
                 videoChunks.push(event.data);
             };
@@ -276,31 +294,31 @@
 
         function updateTimer() {
             if (mediaRecorder && mediaRecorder.state === "recording") {
-                const elapsedTime = Math.floor((Date.now() - recordingStartTime) / 1000);
-                timerElement.textContent = `Recording: ${elapsedTime}s`;
+                const elapsedTime = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsedTime / 1000);
+                timerElement.textContent = `Recording: ${seconds}s`;
                 requestAnimationFrame(updateTimer);
             }
         }
 
-        // Show gallery
+        // Show the gallery
         galleryButton.addEventListener('click', () => {
             galleryContainer.style.display = 'block';
+            document.querySelector('.camera-container').style.display = 'none';
         });
 
-        function saveToGallery(photoData) {
-            const img = document.createElement('img');
-            img.src = photoData;
-            gallery.appendChild(img);
-        }
-
+        // Close the gallery and go back to the camera
         function closeGallery() {
             galleryContainer.style.display = 'none';
+            document.querySelector('.camera-container').style.display = 'block';
         }
 
-        // "Click Me" Button Action
-        randomButton.addEventListener('click', () => {
-            alert('loveu baby ehehehe');
-        });
+        // Save photo to gallery
+        function saveToGallery(photo) {
+            const img = document.createElement('img');
+            img.src = photo;
+            gallery.appendChild(img);
+        }
     </script>
 </body>
 </html>
