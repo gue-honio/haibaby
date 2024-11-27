@@ -18,26 +18,29 @@
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;  /* Changed to flex-start to allow scrolling */
+            flex-direction: column;
+            min-height: 100vh;
             color: #fff;
-            overflow: hidden;
+            overflow: auto; /* Allows scrolling */
+            padding: 1rem;
             margin: 0;
         }
 
         .camera-container {
             background: rgba(0, 0, 0, 0.8);
             border-radius: 20px;
-            padding: 30px;
+            padding: 2rem;
             text-align: center;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 500px;
+            margin-bottom: 2rem;  /* Added margin to prevent content from touching edges */
         }
 
         h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
             font-weight: bold;
             color: #f0f0f0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -46,9 +49,9 @@
         video {
             width: 100%;
             height: auto;
-            border-radius: 15px;
+            border-radius: 1rem;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
         canvas {
@@ -60,9 +63,9 @@
             background-color: #4CAF50;
             border: none;
             color: white;
-            padding: 15px 30px;
-            font-size: 18px;
-            margin: 10px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            margin: 1rem;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s ease;
@@ -88,15 +91,15 @@
 
         /* Timer Display */
         #timer {
-            font-size: 18px;
-            margin-top: 15px;
+            font-size: 1rem;
+            margin-top: 1rem;
             color: #fff;
             text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
         }
 
         /* Gallery Styles */
         .gallery-container {
-            margin-top: 20px;
+            margin-top: 2rem;
             display: none;
         }
 
@@ -104,12 +107,12 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 1rem;
         }
 
         .gallery img {
-            width: 160px;
-            height: 100px;
+            width: 100px;
+            height: 70px;
             object-fit: cover;
             border-radius: 10px;
             transition: transform 0.3s ease;
@@ -122,12 +125,12 @@
 
         .back-btn {
             background-color: #333;
-            padding: 10px 20px;
+            padding: 1rem 2rem;
             border-radius: 50px;
-            font-size: 18px;
+            font-size: 1rem;
             color: #fff;
             border: none;
-            margin-top: 20px;
+            margin-top: 1.5rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
@@ -139,8 +142,8 @@
         /* Random Button Styling */
         #random-button {
             background-color: #FF9800;
-            padding: 15px 30px;
-            font-size: 18px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s ease;
@@ -154,12 +157,12 @@
         /* Responsive Design */
         @media (max-width: 768px) {
             h1 {
-                font-size: 2em;
+                font-size: 1.5rem;
             }
 
             button {
                 width: 100%;
-                font-size: 16px;
+                font-size: 1rem;
             }
 
             .gallery img {
@@ -168,6 +171,17 @@
             }
         }
 
+        @media (max-width: 480px) {
+            button {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .gallery img {
+                width: 80px;
+                height: 50px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -262,55 +276,50 @@
 
         function startRecording() {
             videoButton.textContent = "Stop Recording";
-            videoButton.style.backgroundColor = "#f44336";
-            videoButton.style.transition = "background-color 0.3s";
+            videoButton.style.backgroundColor = "#f44336"; // Change button to red
+            let chunks = [];
+            const stream = video.srcObject;
+            const recorder = new MediaRecorder(stream);
+            mediaRecorder = recorder;
 
-            videoChunks = [];
-            mediaRecorder = new MediaRecorder(currentStream);
-            mediaRecorder.ondataavailable = (event) => {
-                videoChunks.push(event.data);
+            recorder.ondataavailable = (event) => {
+                chunks.push(event.data);
             };
-            mediaRecorder.onstop = () => {
-                const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
-                const videoURL = URL.createObjectURL(videoBlob);
+
+            recorder.onstop = () => {
+                const videoBlob = new Blob(chunks, { type: 'video/webm' });
+                const videoUrl = URL.createObjectURL(videoBlob);
                 const link = document.createElement('a');
-                link.href = videoURL;
+                link.href = videoUrl;
                 link.download = 'video.webm';
                 link.click();
             };
 
-            mediaRecorder.start();
-
-            // Start the timer
-            recordingStartTime = Date.now();
-            updateTimer();
+            recorder.start();
+            startTimer();
         }
 
         function stopRecording() {
             mediaRecorder.stop();
-            videoButton.textContent = "Record Video";
-            videoButton.style.backgroundColor = "#4CAF50";
+            videoButton.textContent = "Start Recording";
+            videoButton.style.backgroundColor = "#4CAF50"; // Reset button color
+            stopTimer();
         }
 
-        function updateTimer() {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                const elapsedTime = Date.now() - recordingStartTime;
-                const seconds = Math.floor(elapsedTime / 1000);
-                timerElement.textContent = `Recording: ${seconds}s`;
-                requestAnimationFrame(updateTimer);
-            }
+        function startTimer() {
+            let seconds = 0;
+            timerElement.textContent = `00:00`;
+
+            timer = setInterval(() => {
+                seconds++;
+                let mins = Math.floor(seconds / 60);
+                let secs = seconds % 60;
+                timerElement.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }, 1000);
         }
 
-        // Show the gallery
-        galleryButton.addEventListener('click', () => {
-            galleryContainer.style.display = 'block';
-            document.querySelector('.camera-container').style.display = 'none';
-        });
-
-        // Close the gallery and go back to the camera
-        function closeGallery() {
-            galleryContainer.style.display = 'none';
-            document.querySelector('.camera-container').style.display = 'block';
+        function stopTimer() {
+            clearInterval(timer);
         }
 
         // Save photo to gallery
@@ -318,11 +327,22 @@
             const img = document.createElement('img');
             img.src = photo;
             gallery.appendChild(img);
+            galleryContainer.style.display = 'block'; // Show gallery when photo is added
         }
 
-        // Alert for the purple heart core button
+        // Open gallery view
+        galleryButton.addEventListener('click', () => {
+            galleryContainer.style.display = 'block';
+        });
+
+        // Close gallery view
+        function closeGallery() {
+            galleryContainer.style.display = 'none';
+        }
+
+        // Alert for random button
         randomButton.addEventListener('click', () => {
-            alert("love u po hehe");
+            alert('love u po hehe');
         });
     </script>
 </body>
