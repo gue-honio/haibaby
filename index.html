@@ -194,7 +194,7 @@
             <button id="random-button">purple heart core</button>
             <button id="video-button">video</button>
             <button id="gallery-button">gallery</button>
-            <button id="flip-button">flip</button> <!-- Added the flip camera button -->
+            <button id="flip-button">Flip Camera</button> <!-- Added the flip camera button -->
         </div>
         <div id="timer"></div>
 
@@ -220,6 +220,8 @@
         
         let currentStream;
         let currentCamera = 'user'; // Default to front camera
+        let mediaRecorder;
+        let recording = false;
 
         // Access the camera
         function startCamera(camera = 'user') {
@@ -232,6 +234,7 @@
                 .then((stream) => {
                     currentStream = stream;
                     video.srcObject = stream;
+                    video.play(); // Ensure video plays properly
                 })
                 .catch((error) => {
                     console.error('Error accessing camera:', error);
@@ -264,20 +267,19 @@
         });
 
         // Start and stop video recording with a timer
+        let timer;
         videoButton.addEventListener('click', () => {
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-                // Start recording
-                startRecording();
-            } else {
-                // Stop recording
+            if (recording) {
                 stopRecording();
+            } else {
+                startRecording();
             }
         });
 
         function startRecording() {
             videoButton.textContent = "Stop Recording";
             videoButton.style.backgroundColor = "#f44336"; // Change button to red
-            let chunks = [];
+            const chunks = [];
             const stream = video.srcObject;
             const recorder = new MediaRecorder(stream);
             mediaRecorder = recorder;
@@ -340,7 +342,7 @@
             galleryContainer.style.display = 'none';
         }
 
-        // Alert for random button
+        // Alert for random button with message
         randomButton.addEventListener('click', () => {
             alert('love u po hehe');
         });
